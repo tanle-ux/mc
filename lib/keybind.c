@@ -172,6 +172,7 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME (Filter),
 #ifdef ENABLE_VFS_SHELL
     ADD_KEYMAP_NAME (ConnectShell),
+    ADD_KEYMAP_NAME (ConnectSapiSsh),
 #endif
 #ifdef ENABLE_VFS_FTP
     ADD_KEYMAP_NAME (ConnectFtp),

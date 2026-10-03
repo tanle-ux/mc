@@ -17,6 +17,7 @@ Starting with this release, we will be using language features that require a C9
 
     * extfs vfs:  chmod/chown inside extfs (e.g. zip archive) silently fails (#4629)
     * Add embedded torrent viewer/vfs (#3100)
+    * Shell VFS: connect with sapi ssh via sapi://[user@]target[:port]/path
 
 - Misc
 

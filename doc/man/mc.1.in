@@ -3353,6 +3353,31 @@ Examples:
     sh://joe@noncompressed.ssh.edu/private
     sh://joe@somehost.ssh.edu:2222/private
 .fi
+.PP
+SAPI SSH uses the same shell protocol through the
+.B sapi ssh
+command instead of
+.BR ssh .
+Log in first with
+.B sapi login
+(the connection refuses an interactive browser login).
+To connect, chdir into a directory of the form:
+.PP
+.I sapi://[user@]target[:port]/[remote\-dir]
+.PP
+.I target
+is a SAPI target name or address.
+.I user
+is passed to the underlying ssh as
+.BR \-l .
+.I port
+is the ssh port (22 if omitted).
+Examples:
+.PP
+.nf
+    sapi://my\-target/var/log
+    sapi://joe@10.1.2.3:2222/home/joe
+.fi
 .\"NODE "  SFTP (SSH File Transfer Protocol) filesystem"
 .SH "  SFTP (SSH File Transfer Protocol) filesystem"
 The SFTP file system is a network based file system that allows you to

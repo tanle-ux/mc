@@ -1177,6 +1177,13 @@ shelllink_cmd (void)
     nice_cd (_ ("Shell link to machine"), _ (machine_str), "[FIle transfer over SHell filesystem]",
              ":fishlink_cmd: Shell link to machine ", "sh://", 1, TRUE);
 }
+
+void
+sapi_sshlink_cmd (void)
+{
+    nice_cd (_ ("SAPI SSH to target"), _ (machine_str), "[FIle transfer over SHell filesystem]",
+             ":sapi_sshlink_cmd: SAPI SSH to target ", "sapi://", 1, TRUE);
+}
 #endif
 
 /* --------------------------------------------------------------------------------------------- */

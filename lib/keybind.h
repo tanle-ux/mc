@@ -153,6 +153,7 @@ enum
     CK_ConnectShell,
     CK_ConnectFtp,
     CK_ConnectSftp,
+    CK_ConnectSapiSsh,
     CK_PanelInfo,
     CK_Jobs,
     CK_OptionsLayout,

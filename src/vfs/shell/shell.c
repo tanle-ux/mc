@@ -45,6 +45,10 @@
  *      where C means you want compressed connection,
  *      and r means you want to use rsh
  *
+ * SAPI SSH (a Boundary-backed ssh wrapper) uses the same shell protocol:
+ * \verbatim sapi://[user@]target[:port]/path \endverbatim
+ * MC runs: sapi --no-browser ssh <target> [--exec "echo SHELL:; /bin/sh"]
+ *
  * Namespace: shell_vfs_ops exported.
  */
 
@@ -511,13 +515,101 @@ shell_info (struct vfs_class *me, struct vfs_s_super *super)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static gboolean
+shell_path_is_sapi (const vfs_path_element_t *element)
+{
+    return (element != NULL && element->vfs_prefix != NULL
+            && strncmp (element->vfs_prefix, "sapi", 4) == 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Accept sh:// (and any prefix that starts with "sh", as before) and sapi://. */
+static int
+shell_which (struct vfs_class *me, const char *path)
+{
+    (void) me;
+
+    if (path == NULL)
+        return (-1);
+
+    if (strncmp (path, "sh", 2) == 0)
+        return 0;
+
+    if (strncmp (path, "sapi", 4) == 0)
+        return 0;
+
+    return (-1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+shell_open_archive_pipeopen_sapi (struct vfs_s_super *super)
+{
+    char gbuf[10];
+    const char *argv[16];
+    int i = 0;
+
+    /*
+     * sapi ssh opens a Boundary session and then ssh. --no-browser keeps
+     * OIDC from reading the protocol pipe; the remote command is the same
+     * shell handshake used for plain ssh. -T avoids a pty, which would
+     * corrupt the shell protocol. Log in first with "sapi login".
+     */
+    argv[i++] = "sapi";
+    argv[i++] = "--no-browser";
+    argv[i++] = "ssh";
+    argv[i++] = super->path_element->host;
+
+    if (super->path_element->port > SHELL_FLAG_RSH)
+    {
+        argv[i++] = "-p";
+        g_snprintf (gbuf, sizeof (gbuf), "%d", super->path_element->port);
+        argv[i++] = gbuf;
+    }
+
+    argv[i++] = "--exec";
+    argv[i++] = "echo SHELL:; /bin/sh";
+    argv[i++] = "--";
+    argv[i++] = "-T";
+
+    if (super->path_element->port == SHELL_FLAG_COMPRESSED)
+        argv[i++] = "-C";
+
+    if (super->path_element->user != NULL)
+    {
+        argv[i++] = "-l";
+        argv[i++] = super->path_element->user;
+    }
+    else
+    {
+        // The rest of the code assumes it to be a valid username
+        super->path_element->user = vfs_get_local_username ();
+    }
+
+    argv[i++] = NULL;
+
+    shell_pipeopen (super, "sapi", argv);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 shell_open_archive_pipeopen (struct vfs_s_super *super)
 {
     char gbuf[10];
     const char *argv[10];  // All of 10 is used now
-    const char *xsh = (super->path_element->port == SHELL_FLAG_RSH ? "rsh" : "ssh");
+    const char *xsh;
     int i = 0;
+
+    if (shell_path_is_sapi (super->path_element))
+    {
+        shell_open_archive_pipeopen_sapi (super);
+        return;
+    }
+
+    xsh = (super->path_element->port == SHELL_FLAG_RSH ? "rsh" : "ssh");
 
     argv[i++] = xsh;
     if (super->path_element->port == SHELL_FLAG_COMPRESSED)
@@ -720,7 +812,8 @@ shell_archive_same (const vfs_path_element_t *vpath_element, struct vfs_s_super 
     if (path_element->user == NULL)
         path_element->user = vfs_get_local_username ();
 
-    result = ((strcmp (path_element->host, super->path_element->host) == 0)
+    result = ((shell_path_is_sapi (path_element) == shell_path_is_sapi (super->path_element))
+              && (strcmp (path_element->host, super->path_element->host) == 0)
               && (strcmp (path_element->user, super->path_element->user) == 0)
               && (path_element->port == super->path_element->port))
         ? 1
@@ -1673,10 +1766,18 @@ shell_fill_names (struct vfs_class *me, fill_names_f func)
             break;
         }
 
-        name = g_strconcat (vfs_shell_ops->prefix, VFS_PATH_URL_DELIMITER,
-                            super->path_element->user, "@", super->path_element->host, flags,
-                            PATH_SEP_STR, super->path_element->path, (char *) NULL);
-        func (name);
+        {
+            const char *prefix;
+
+            prefix = super->path_element->vfs_prefix;
+            if ((prefix == NULL) || (*prefix == '\0'))
+                prefix = vfs_shell_ops->prefix;
+
+            name = g_strconcat (prefix, VFS_PATH_URL_DELIMITER, super->path_element->user, "@",
+                                super->path_element->host, flags, PATH_SEP_STR,
+                                super->path_element->path, (char *) NULL);
+            func (name);
+        }
         g_free (name);
     }
 }
@@ -1704,6 +1805,7 @@ vfs_init_shell (void)
     tcp_init ();
 
     vfs_init_subclass (&shell_subclass, "shell", VFSF_REMOTE | VFSF_USETMP, "sh");
+    vfs_shell_ops->which = shell_which;
     vfs_shell_ops->fill_names = shell_fill_names;
     vfs_shell_ops->stat = shell_stat;
     vfs_shell_ops->lstat = shell_lstat;

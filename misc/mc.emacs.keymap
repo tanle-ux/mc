@@ -51,6 +51,7 @@ ScreenList = alt-prime
 # EditFileHighlightFile =
 # Filter =
 # ConnectShell =
+# ConnectSapiSsh =
 # ConnectFtp =
 EditorViewerHistory = alt-shift-e
 ExtendedKeyMap = ctrl-x

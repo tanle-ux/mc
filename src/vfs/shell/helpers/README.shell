@@ -6,6 +6,11 @@ This protocol was designed for transferring files over a remote shell
 connection (rsh and compatibles). It can be as well used for transfers over
 rsh, and there may be other uses.
 
+sapi://[user@]target[:port]/path uses the same protocol via "sapi ssh"
+(HashiCorp Boundary) instead of a direct ssh binary. MC invokes
+"sapi --no-browser ssh <target> --exec 'echo SHELL:; /bin/sh'".
+Run "sapi login" before connecting.
+
 Since version 4.8.31 Midnight Commander doesn't support FISH commands with form
 
 #FISH_COMMAND [arg1] [arg2] ... [argN]

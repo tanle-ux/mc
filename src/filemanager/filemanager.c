@@ -194,6 +194,7 @@ create_panel_menu (void)
 #endif
 #ifdef ENABLE_VFS_SHELL
     entries = g_list_prepend (entries, menu_entry_new (_ ("S&hell link..."), CK_ConnectShell));
+    entries = g_list_prepend (entries, menu_entry_new (_ ("SAPI SSH lin&k..."), CK_ConnectSapiSsh));
 #endif
 #ifdef ENABLE_VFS_SFTP
     entries = g_list_prepend (entries, menu_entry_new (_ ("SFTP li&nk..."), CK_ConnectSftp));
@@ -1194,6 +1195,9 @@ midnight_execute_cmd (Widget *sender, long command)
 #ifdef ENABLE_VFS_SHELL
     case CK_ConnectShell:
         shelllink_cmd ();
+        break;
+    case CK_ConnectSapiSsh:
+        sapi_sshlink_cmd ();
         break;
 #endif
 #ifdef ENABLE_VFS_FTP
